@@ -19,9 +19,9 @@
 #define RESET   "\e[0;39m"
 
 // user-defined function prototypes
-char get_guess[100](int wordsize);
-int check_word(char guess[100], int wordsize, int status[], char choice[100]);
-void print_word(char guess[100], int wordsize, int status[]);
+char *get_guess(int wordsize);
+int check_word(char guess[100], int wordsize, int status[], char *choice);
+void print_word(char guess[100], int wordsize, int *status);
 
 int main(int argc, char *argv[])
 {
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 
     // pseudorandomly select a word for this game
     srand(time(NULL));
-    char choice[100] = options[rand() % LISTSIZE];
+    char *choice = options[rand() % LISTSIZE];
 
     // allow one more guess than the length of the word
     int guesses = wordsize + 1;
@@ -73,10 +73,13 @@ int main(int argc, char *argv[])
     for (int i = 0; i < guesses; i++)
     {
         // obtain user's guess
-        char guess[100] = get_guess(wordsize);
+        char *guess = get_guess(wordsize);
 
         // array to hold guess status, initially set to zero
-        int status[wordsize];
+        int status[wordsize];                                                     //comebeack here cause it is confusing.  or use "memset(status, 0, sizeof(status));"
+        if (status[EXACT] == status[WRONG] || status[CLOSE] == status[WRONG]) {
+            return 0;
+        }
 
         // set all elements of status array initially to 0, aka WRONG
         // TODO #4
@@ -96,24 +99,27 @@ int main(int argc, char *argv[])
             break;
         }
     }
-
-    // Print the game's result
+    if (won) {
+        printf("You won!\n");
+    } else {
+        printf("You lost after %i guesses and the secret word is: %s\n", guesses, choice); // Print the game's result
+    }
     // TODO #7
 
     // that's all folks!
     return 0;
 }
 
-char get_guess[100](int wordsize)
+char *get_guess(int wordsize)
 {
     char guess[100];
-    printf("Input a %i -letter word:" &wordsize)
+    printf("Input a %i -letter word:", wordsize);
     fgets(guess, 100, stdin);
-    strlen(guess);
-    if (guess[strlen(guess) == wordsize]) {   //you can go back to use the marioless do while loop also but for now let go with these.
+    int len = strlen(guess);
+    if (len == wordsize) {   //you can go back to use the marioless do while loop also but for now let go with these.
         return 0;
     } else {
-        return 1;
+        printf("Invalid guess length. Please enter a %i-letter word.\n", wordsize);
     }
 
     // ensure users actually provide a guess that is the correct length
@@ -122,29 +128,44 @@ char get_guess[100](int wordsize)
     return guess;
 }
 
-int check_word(char guess, int wordsize, int status[], string choice)
+int check_word(char guess[100], int wordsize, int status[], char choice[100])
 {
-    int score = 0;
 
     // compare guess to choice and score points as appropriate, storing points in status
     // TODO #5
 
-    // HINTS
-    // iterate over each letter of the guess
-        // iterate over each letter of the choice
-            // compare the current guess letter to the current choice letter
-                // if they're the same position in the word, score EXACT points (green) and break so you don't compare that letter further
-                // if it's in the word, but not the right spot, score CLOSE point (yellow)
-        // keep track of the total score by adding each individual letter's score from above
-
+    // HINTS                    //made a mistake here but for sure choice and guess is an array of size wordsize
+    int score = 0;
+    for (int i = 0; i < wordsize; i++) {        // iterate over each letter of the guess 
+        status[i] = WRONG;
+        if (guess[i] == choice[i]) {            // compare the current guess letter to the current choice letter
+            status[i] = EXACT;                  // if they're the same position in the word, score EXACT points (green) and break so you don't compare that letter further
+            score += status[i];                  // keep track of the total score by adding each individual letter's score from above
+        }
+        for (int j = 0; j < wordsize; j++) {        // iterate over each letter of the choice
+            if (i != j || guess[i] == choice[j] || status[j] != EXACT) {        // compare the current guess letter to the current choice letter
+                status[j] = CLOSE;
+                score += status[j];      // keep track of the total score by adding each individual letter's score from above
+                break;
+            }
+        }
+    }
     return score;
-}
+}    
 
-void print_word(char guess, int wordsize, int status[])
+void print_word(char* guess, int wordsize, int status[])
 {
     // print word character-for-character with correct color coding, then reset terminal font to normal
     // TODO #6
-
+    for (int i = 0; i < wordsize; i++) {
+        if (status[i] == 2) {
+            printf(GREEN "%c" RESET " ", guess[i]);
+        } else if (status[i] == 1) {
+            printf(YELLOW "%c" RESET " ", guess[i]);
+        } else {
+            printf(RED "%c" RESET " ", guess[i]);
+        }
+    }
     printf("\n");
     return;
 }
